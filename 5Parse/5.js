@@ -1,30 +1,59 @@
-<!DOCTYPE html>
-<html lang="ru">
+document.addEventListener('DOMContentLoaded', () => {
+	const pageNumberInput = document.getElementById('pageNumber');
+	const limitInput = document.getElementById('limit');
+	const requestButton = document.getElementById('requestButton');
+	const errorMessage = document.getElementById('errorMessage');
+	const photoList = document.getElementById('photoList');
 
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Запрос картинок</title>
-	<link rel="stylesheet" href="5.css">
-	<script src="5.js"></script>
-</head>
+	// Проверка на валидность чисел
+	function isValidNumber(value) {
+		return !isNaN(value) && value >= 1 && value <= 10;
+	}
 
-<body>
-	<div class="container">
-		<h1>Photo Request App</h1>
-		<div class="input-group">
-			<label for="pageNumber">Номер страницы:</label>
-			<input type="number" id="pageNumber" min="1" max="10">
-		</div>
-		<div class="input-group">
-			<label for="limit">Лимит:</label>
-			<input type="number" id="limit" min="1" max="10">
-		</div>
-		<button id="requestButton">Запрос</button>
-		<div id="errorMessage"></div>
-		<div id="photoList"></div>
-	</div>
+	// Обработка клика на кнопку
+	requestButton.addEventListener('click', () => {
+		const pageNumber = parseInt(pageNumberInput.value);
+		const limit = parseInt(limitInput.value);
 
-</body>
+		errorMessage.textContent = '';
 
-</html>
+		if (!isValidNumber(pageNumber) && !isValidNumber(limit)) {
+			errorMessage.textContent = 'Номер страницы и лимит вне диапазона от 1 до 10';
+		} else if (!isValidNumber(pageNumber)) {
+			errorMessage.textContent = 'Номер страницы вне диапазона от 1 до 10';
+		} else if (!isValidNumber(limit)) {
+			errorMessage.textContent = 'Лимит вне диапазона от 1 до 10';
+		} else {
+			const url = `https://jsonplaceholder.typicode.com/photos?_page=${pageNumber}&_limit=${limit}`;
+
+			fetch(url)
+				.then(response => response.json())
+				.then(data => {
+					// Сохраняем данные в localStorage
+					localStorage.setItem('lastPhotos', JSON.stringify(data));
+					displayPhotos(data);
+				})
+				.catch(error => {
+					console.error('Error fetching photos:', error);
+				});
+		}
+	});
+
+	// Отображение фотографий
+	function displayPhotos(photos) {
+		photoList.innerHTML = '';
+		photos.forEach(photo => {
+			const img = document.createElement('img');
+			img.src = photo.thumbnailUrl;
+			img.alt = photo.title;
+			photoList.appendChild(img);
+		});
+	}
+
+	// Проверка localStorage при загрузке страницы
+	const lastPhotos = JSON.parse(localStorage.getItem('lastPhotos'));
+	if (lastPhotos) {
+		displayPhotos(lastPhotos);
+	}
+});
+
