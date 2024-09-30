@@ -1,61 +1,48 @@
 window.onload = function () {
+	const limitInput = document.getElementById('limitInput');
+	const sendButton = document.getElementById('sendRequest');
+	const resultDiv = document.getElementById('result');
+	console.log(sendButton)
+	sendButton.addEventListener('click', () => {
+		const limit = parseInt(limitInput.value);
 
-    function displaySavedImages() {
-        const savedData = localStorage.getItem('savedImages');
-        if (savedData) {
-            const data = JSON.parse(savedData);
-            displayImages(data);
-        }
-    }
+		if (isNaN(limit) || limit < 1 || limit > 10) {
+			resultDiv.textContent = 'Число вне диапазона от 1 до 10';
+			return;
+		}
 
-    document.getElementById('requestButton').addEventListener('click', function () {
-        const heightInput = document.getElementById('height').value.trim();
-        const widthInput = document.getElementById('width').value.trim();
-        const height = parseInt(heightInput);
-        const width = parseInt(widthInput);
-        let errorMessage = '';
+		const xhr = new XMLHttpRequest();
+		const url = `https://jsonplaceholder.typicode.com/photos?_limit=${limit}`;
 
-        // Проверка номера страницы
-        if (isNaN(height) || height < 100 || height > 300) {
-            errorMessage += 'Введённая высота вне диапазона от 100 до 300';
-        }
+		xhr.open('GET', url);
 
-        // Проверка лимита
-        if (isNaN(width) || width < 100 || width > 300) {
-            if (errorMessage.length > 0) {
-                errorMessage += ' и ширина вне диапазона от 100 до 300';
-            } else {
-                errorMessage += 'Ширина вне диапазона от 100 до 300';
-            }
-        }
+		xhr.onload = function () {
+			if (xhr.status >= 200 && xhr.status < 300) {
+				try {
+					const data = JSON.parse(xhr.response);
+					resultDiv.innerHTML = ''; // Очищаем предыдущий результат
+					data.forEach(item => {
+						const img = document.createElement('img');
+						img.src = item.thumbnailUrl;
+						img.alt = item.title;
+						img.style.maxWidth = '100px';  // устанавливаем максимальную ширину для миниатюр
+						img.style.marginRight = '10px'; // добавляем отступ справа
+						resultDiv.appendChild(img);
+					});
+				} catch (error) {
+					resultDiv.textContent = 'Ошибка парсинга JSON: ' + error.message;
+				}
+			} else {
+				resultDiv.textContent = 'Ошибка запроса: ' + xhr.status + ' ' + xhr.statusText;
+			}
+		};
 
-        const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = ''; // Очистка результата
+		xhr.onerror = function () {
+			resultDiv.textContent = 'Ошибка сети';
+		};
 
-        if (errorMessage.length > 0) {
-            // Вывод сообщения об ошибке
-            resultDiv.innerHTML = `<p class="error">${errorMessage}</p>`;
-        } else {
-            // Выполнение запроса
-            const url = `https://dummyimage.com/${width}x${height}/000/fff&text=Sample+Image`;
+		xhr.send();
+	});
 
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.blob(); // Получаем изображение в виде Blob
-                })
-                .then(blob => {
-                    const imageUrl = URL.createObjectURL(blob);
-                    resultDiv.innerHTML = `<img src="${imageUrl}" alt="Sample Image">`;
-                })
-                .catch(error => {
-                    console.error('Ошибка:', error);
-                    resultDiv.innerHTML = `<p class="error">Произошла ошибка при получении данных</p>`;
-                });
-        }
-    });
-
-    window.addEventListener('load', displaySavedImages);
 }
+
